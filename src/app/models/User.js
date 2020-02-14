@@ -10,7 +10,6 @@ class User extends Model {
         oldPassword: Sequelize.VIRTUAL,
         password: Sequelize.VIRTUAL,
         password_hash: Sequelize.STRING,
-        provider: Sequelize.BOOLEAN,
       },
       { sequelize }
     );
