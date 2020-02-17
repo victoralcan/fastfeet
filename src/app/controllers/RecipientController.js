@@ -1,13 +1,18 @@
 import Recipient from '../models/Recipient';
 import User from '../models/User';
+import { cadastroSchema } from '../schemas/RecipientSchema';
 
 class RecipientController {
   async store(req, res) {
+    if (!(await cadastroSchema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
     if (!req.userId) {
       return res.status(401).json({ error: 'You are not logged in' });
     }
 
-    const admin = User.findOne({
+    const admin = await User.findOne({
       where: {
         email: 'admin@fastfeet.com',
       },
