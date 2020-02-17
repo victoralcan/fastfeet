@@ -1,7 +1,12 @@
 import User from '../models/User';
+import { cadastroSchema } from '../schemas/UserSchema';
 
 class UserController {
   async store(req, res) {
+    if (!(await cadastroSchema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
     const exist = await User.findOne({
       where: {
         email: req.body.email,
