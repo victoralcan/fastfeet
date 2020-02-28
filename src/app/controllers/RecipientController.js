@@ -1,6 +1,6 @@
 import Recipient from '../models/Recipient';
 import User from '../models/User';
-import { cadastroSchema } from '../schemas/RecipientSchema';
+import { cadastroSchema } from '../utils/YupSchemas/RecipientSchema';
 
 class RecipientController {
   async store(req, res) {
@@ -14,11 +14,11 @@ class RecipientController {
 
     const admin = await User.findOne({
       where: {
-        email: 'admin@fastfeet.com',
+        id: req.userId,
       },
     });
 
-    if (admin.id !== req.userId) {
+    if (!admin) {
       return res.status(403).json({ error: 'You are not admin' });
     }
 

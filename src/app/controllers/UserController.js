@@ -1,5 +1,5 @@
 import User from '../models/User';
-import { cadastroSchema } from '../schemas/UserSchema';
+import { cadastroSchema } from '../utils/YupSchemas/UserSchema';
 
 class UserController {
   async store(req, res) {
