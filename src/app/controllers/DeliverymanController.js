@@ -6,6 +6,10 @@ import {
 
 class DeliverymanController {
   async store(req, res) {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'You are not logged in' });
+    }
+
     if (!(await cadastroSchema.isValid(req.body))) {
       return res.status(400).json({ error: 'Validation fails' });
     }
@@ -28,14 +32,18 @@ class DeliverymanController {
   }
 
   async index(req, res) {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'You are not logged in' });
+    }
+
     const deliverymans = await Deliveryman.findAll();
 
-    const deliverymansArray = deliverymans.map(deliveryman => ({
+    const deliverymansFilter = deliverymans.map(deliveryman => ({
       name: deliveryman.name,
       email: deliveryman.email,
     }));
 
-    return res.json(deliverymansArray);
+    return res.json(deliverymansFilter);
   }
 
   async update(req, res) {
@@ -43,9 +51,13 @@ class DeliverymanController {
       return res.status(400).json({ error: 'Validation Fails' });
     }
 
+    if (!req.userId) {
+      return res.status(401).json({ error: 'You are not logged in' });
+    }
+
     const { id } = req.params;
 
-    const { name, email } = req.body;
+    const { email } = req.body;
 
     const deliveryman = await Deliveryman.findByPk(id);
 
@@ -65,15 +77,15 @@ class DeliverymanController {
       return res.status(400).json({ error: 'Email already in use' });
     }
 
-    await deliveryman.update({
-      name: name || deliveryman.name,
-      email: email || deliveryman.email,
-    });
+    await deliveryman.update(req.body);
 
     return res.json(deliveryman);
   }
 
   async delete(req, res) {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'You are not logged in' });
+    }
     const { id } = req.params;
 
     const deliveryman = await Deliveryman.findByPk(id);
