@@ -97,7 +97,7 @@ class DeliverymanController {
     }
 
     await deliveryman
-      .destroy()
+      .update({ deleted_at: new Date() })
       .then(res.json('Deliveryman deleted'))
       .catch(
         res.status(500).json({
