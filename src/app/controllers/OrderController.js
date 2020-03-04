@@ -6,6 +6,7 @@ import {
   isPast,
   isToday,
 } from 'date-fns';
+import Sequelize from 'sequelize';
 import Deliveryman from '../models/Deliveryman';
 import File from '../models/File';
 import Order from '../models/Order';
@@ -104,6 +105,7 @@ class OrderController {
   }
 
   async update(req, res) {
+    const { Op } = Sequelize;
     if (!req.userId) {
       return res.status(401).json({ error: 'You are not logged in' });
     }
@@ -114,7 +116,7 @@ class OrderController {
 
     const { id } = req.params;
 
-    const { start_date, end_date } = req.body;
+    const { start_date } = req.body;
 
     const order = await Order.findByPk(id, {
       include: [
@@ -139,6 +141,24 @@ class OrderController {
       const parsedDate = parseISO(start_date);
       const maxHour = setHours(new Date(), 18);
       const minHour = setHours(new Date(), 8);
+      const nOrdersDay = await Order.findAll({
+        where: {
+          start_date: {
+            [Op.not]: null,
+          },
+        },
+      });
+
+      const nOrdersDayFilter = nOrdersDay.filter(o => {
+        return isToday(o.start_date);
+      });
+
+      if (nOrdersDayFilter.length >= 5) {
+        return res
+          .status(400)
+          .json({ error: 'Deliveryman already took 5 orders today' });
+      }
+
       if (order.start_date) {
         return res.status(400).json({ error: 'Start_date already registered' });
       }
@@ -151,6 +171,77 @@ class OrderController {
         });
       }
     }
+    await order.update(req.body);
+
+    return res.json(order);
+  }
+
+  async indexByDeliveryman(req, res) {
+    const { Op } = Sequelize;
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'No id provided' });
+    }
+    if (!req.userId) {
+      return res.status(401).json({ error: 'You are not logged in' });
+    }
+    const { delivered } = req.query;
+
+    let orders = [];
+    let ordersFilter = [];
+
+    if (delivered || delivered === '') {
+      orders = await Order.findAll({
+        where: {
+          deliveryman_id: id,
+          end_date: {
+            [Op.not]: null,
+          },
+          canceled_at: null,
+        },
+      });
+    } else {
+      orders = await Order.findAll({
+        where: {
+          deliveryman_id: id,
+          end_date: null,
+          canceled_at: null,
+        },
+      });
+    }
+
+    ordersFilter = orders.map(order => ({
+      recipient_id: order.recipient_id,
+      deliveryman_id: order.deliveryman_id,
+      product: order.product,
+    }));
+
+    return res.json(ordersFilter);
+  }
+
+  async endOrder(req, res) {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'You are not logged in' });
+    }
+
+    const { id } = req.params;
+
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: Deliveryman,
+          as: 'deliveryman',
+          attributes: ['name', 'email'],
+        },
+        {
+          model: File,
+          as: 'signature',
+          attributes: ['path', 'url'],
+        },
+      ],
+    });
+
+    const { end_date } = req.body;
 
     if (end_date) {
       if (!order.start_date) {
@@ -158,11 +249,20 @@ class OrderController {
           .status(400)
           .json({ error: 'You cant update end_date without start_date' });
       }
+      if (!req.file) {
+        return res.status(400).json({ error: 'Missing signature picture' });
+      }
+
+      const { originalname: name, filename: path } = req.file;
+
+      const file = await File.create({
+        name,
+        path,
+      });
+
+      return res.json(file);
     }
-
-    await order.update(req.body);
-
-    return res.json(order);
+    return res.status(400).json();
   }
 }
 

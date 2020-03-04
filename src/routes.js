@@ -18,12 +18,17 @@ routes.post('/sessions', SessionController.store);
 
 routes.use(AuthMiddleware);
 
-routes.post('/recipient/cadastro', RecipientController.store);
+routes.post('/recipient', RecipientController.store);
 
-routes.post('/deliverymans/cadastro', DeliverymanController.store);
+routes.post('/deliverymans', DeliverymanController.store);
 routes.get('/deliverymans', DeliverymanController.index);
-routes.put('/deliverymans/:id', DeliverymanController.update);
+routes.put(
+  '/deliverymans/:id',
+  upload.single('file'),
+  DeliverymanController.update
+);
 routes.delete('/deliverymans/:id', DeliverymanController.delete);
+routes.get('/deliverymans/:id/deliveries', OrderController.indexByDeliveryman);
 
 routes.post('/files', upload.single('file'), FileController.store);
 
